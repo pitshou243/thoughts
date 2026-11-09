@@ -46,8 +46,6 @@ Record Rancher, Elemental Operator, Elemental Register, OS image, and Kubernetes
 
 If the expected API resources are missing, check the Elemental CRD installation. If a command returns `Forbidden`, confirm permissions before concluding that the resource is absent.
 
-Examples below use `fleet-default` for registration resources and `cattle-elemental-system` for the operator. Substitute the actual namespaces.
-
 ### 3. Check operator health and resource conditions
 
 ```bash
