@@ -37,8 +37,7 @@ kubectl config current-context
 kubectl get nodes -o wide
 helm list -A
 kubectl -n cattle-elemental-system get deployments,pods -o wide
-kubectl -n cattle-elemental-system get deployments \
-  -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{range .spec.template.spec.containers[*]}{.image}{" "}{end}{"\n"}{end}'
+kubectl -n cattle-elemental-system get deployments -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{range .spec.template.spec.containers[*]}{.image}{" "}{end}{"\n"}{end}'
 kubectl api-resources --api-group=elemental.cattle.io
 ```
 
@@ -50,8 +49,7 @@ If the expected API resources are missing, check the Elemental CRD installation.
 
 ```bash
 kubectl -n cattle-elemental-system get pods -o wide
-kubectl -n cattle-elemental-system logs deployment/elemental-operator \
-  --all-containers=true --since=2h --timestamps=true
+kubectl -n cattle-elemental-system logs deployment/elemental-operator --all-containers=true --since=2h --timestamps=true
 kubectl -n cattle-elemental-system get events --sort-by=.metadata.creationTimestamp
 kubectl get machineregistrations.elemental.cattle.io -A
 kubectl get machineinventories.elemental.cattle.io -A
@@ -61,8 +59,7 @@ kubectl get seedimages.elemental.cattle.io -A
 If the deployment has a different name, select the actual pod or deployment from the listing. For a restarted operator container, collect its previous logs:
 
 ```bash
-kubectl -n cattle-elemental-system logs <operator-pod> \
-  -c <container-name> --previous --timestamps=true
+kubectl -n cattle-elemental-system logs <operator-pod> -c <container-name> --previous --timestamps=true
 ```
 
 Inspect the affected registration:
@@ -88,8 +85,7 @@ Identify the related build pod from its name, owner references, and events, then
 
 ```bash
 kubectl -n <build-namespace> describe pod <build-pod>
-kubectl -n <build-namespace> logs <build-pod> \
-  --all-containers=true --timestamps=true
+kubectl -n <build-namespace> logs <build-pod> --all-containers=true --timestamps=true
 ```
 
 | Evidence | Next check |
@@ -113,10 +109,8 @@ timedatectl status
 ip -br address
 ip route
 systemctl list-unit-files 'elemental*' 'rancher-system-agent*'
-sudo journalctl -u elemental-register-install.service \
-  -b --no-pager -n 300 -o short-iso
-sudo journalctl -u elemental-register.service \
-  -b --no-pager -n 300 -o short-iso
+sudo journalctl -u elemental-register-install.service -b --no-pager -n 300 -o short-iso
+sudo journalctl -u elemental-register.service -b --no-pager -n 300 -o short-iso
 ```
 
 Service availability depends on whether the machine is running installation media or its installed OS. A missing unit alone is insufficient to diagnose failure.
@@ -125,9 +119,7 @@ Test Rancher hostname resolution and HTTPS access using the actual hostname:
 
 ```bash
 getent ahosts <rancher-hostname>
-curl --connect-timeout 10 --max-time 30 \
-  -sS -o /dev/null -w 'HTTP status: %{http_code}\n' \
-  https://<rancher-hostname>/ping
+curl --connect-timeout 10 --max-time 30 -sS -o /dev/null -w 'HTTP status: %{http_code}\n'  https://<rancher-hostname>/ping
 ```
 
 Successful access to `/ping` confirms that endpoint is reachable with curl's trust configuration. It does not prove that the registration URL, authentication, or Elemental client's CA configuration is correct. Test the actual registration URL separately in a secure session; its response contains registration configuration and its URL contains a token. [2]
@@ -151,8 +143,7 @@ For errors such as `x509: certificate signed by unknown authority` or `CA Data i
 Inspect the certificate chain presented to the affected machine:
 
 ```bash
-openssl s_client -connect <rancher-hostname>:443 \
-  -servername <rancher-hostname> -showcerts </dev/null
+openssl s_client -connect <rancher-hostname>:443 -servername <rancher-hostname> -showcerts </dev/null
 ```
 
 Review hostname coverage, validity dates, issuer, intermediate certificates, and verification output. Compare the result from the machine with a working host; differences may indicate TLS interception or different network paths.
@@ -227,18 +218,15 @@ Correct a confirmed selector or configuration mismatch through the supported clu
 On the **affected machine**:
 
 ```bash
-sudo journalctl -u elemental-system-agent.service \
-  --since '2 hours ago' --no-pager -n 300 -o short-iso
-sudo journalctl -u rancher-system-agent.service \
-  --since '2 hours ago' --no-pager -n 300 -o short-iso
+sudo journalctl -u elemental-system-agent.service --since '2 hours ago' --no-pager -n 300 -o short-iso
+sudo journalctl -u rancher-system-agent.service --since '2 hours ago' --no-pager -n 300 -o short-iso
 systemctl status rke2-server rke2-agent k3s k3s-agent --no-pager
 ```
 
 Inspect only the Kubernetes service installed for that machine's role:
 
 ```bash
-sudo journalctl -u <kubernetes-service> \
-  --since '2 hours ago' --no-pager -n 300 -o short-iso
+sudo journalctl -u <kubernetes-service> --since '2 hours ago' --no-pager -n 300 -o short-iso
 ```
 
 The Elemental system agent initiates the handoff to Rancher provisioning; Rancher system agent executes subsequent provisioning plans. Kubernetes upgrades follow Rancher's provisioning workflow. [1]
@@ -275,12 +263,10 @@ On the **downstream cluster**:
 kubectl get plans.upgrade.cattle.io -A
 kubectl get deployments -A | rg system-upgrade-controller
 kubectl get jobs,pods -A -o wide
-kubectl -n <upgrade-namespace> logs deployment/system-upgrade-controller \
-  --all-containers=true --since=2h --timestamps=true
+kubectl -n <upgrade-namespace> logs deployment/system-upgrade-controller --all-containers=true --since=2h --timestamps=true
 kubectl -n <upgrade-namespace> describe plans.upgrade.cattle.io <plan-name>
 kubectl -n <upgrade-namespace> describe job <upgrade-job>
-kubectl -n <upgrade-namespace> logs job/<upgrade-job> \
-  --all-containers=true --timestamps=true
+kubectl -n <upgrade-namespace> logs job/<upgrade-job> --all-containers=true --timestamps=true
 ```
 
 If `rg` is unavailable, locate the controller in the unfiltered deployment listing.
